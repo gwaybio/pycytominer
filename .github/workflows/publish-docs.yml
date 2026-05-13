@@ -1,0 +1,43 @@
+---
+# referenced from Tomás Farías Santana via
+# https://tomasfarias.dev/posts/sphinx-docs-with-poetry-and-github-pages/
+# adapted for pycytominer (uv-based) from CytoTable's publish-docs.yml
+name: publish docs
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  TARGET_PYTHON_VERSION: "3.10"
+  UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Install pandoc
+        uses: pandoc/actions/setup@v1
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Setup python and uv
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: ${{ env.TARGET_PYTHON_VERSION }}
+          cache-pre-commit: false
+          cache-venv: true
+          setup-uv: true
+          install-deps: true
+      - name: Build documentation
+        run: |
+          mkdir pages
+          touch pages/.nojekyll
+          uv run sphinx-build -b html docs/ pages/
+      - name: Deploy documentation
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: pages
+          folder: pages
